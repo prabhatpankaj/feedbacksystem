@@ -85,7 +85,13 @@ class GitCheckExec(override val compile_production: Boolean) extends BaseChecker
     Process(LABEL_GIT, seq).#>(gitLogOutput).run().exitValue()
 
    gitLogOutput.toString.split("\n").map(entry => {
-      entry.replaceFirst("^\\s*[0-9]+\\s+", "").replaceFirst("<.+>", "").trim
+     val pattern = "<(.+)>".r
+     var email = pattern.findFirstIn(entry).getOrElse("No date found.")
+     /*for (m <- pattern.findAllMatchIn(entry))
+       logger (m.group(2))*/
+     email = email.replace("<", "").replace(">", "")
+     email
+      //entry.replaceFirst("^\\s*[0-9]+\\s+", "").replaceFirst("<.+>", "").trim
     }).toList
   }
 
@@ -111,9 +117,10 @@ class GitCheckExec(override val compile_production: Boolean) extends BaseChecker
         val projectMaintainer: List[Map[String, Any]] = JsonHelper.jsonStrToList(gitlabGet(base_url + projectID + "/members",
           API_TOKEN)).asInstanceOf[List[Map[String, Any]]]
         val pNames = gitGetContributorList(target_dir)
-
         projectMaintainer.foreach(maintainerMap => {
-          val name = maintainerMap("name").asInstanceOf[String]
+          var name = maintainerMap("name").asInstanceOf[String]
+          // convert it to mail address
+          name = name.replace("ü", "ue").replace("ö", "oe").replace("ä", "ae").replace("ß", "ss").toLowerCase().replace(" ", ".") + "@mni.thm.de"
           if (maintainerMap("access_level").asInstanceOf[BigInt] == 40) result = Map(LABEL_TEST -> name, LABEL_RESULT -> pNames.contains(name)) :: result
         })
         val projectDeveloper = projectMaintainer.map(maintainer => {
@@ -160,6 +167,7 @@ class GitCheckExec(override val compile_production: Boolean) extends BaseChecker
       val stderrStream = new StringBuilder
       val logger = ProcessLogger((o: String) => stdoutStream.append(o), (e: String) => stderrStream.append(e))
       seq = Seq("clone", git_url, target_dir)
+      Process("eval ", Seq("$(ssh-agent)"))
       var exitCode = Process(LABEL_GIT, seq).!(logger)
       var output = stdoutStream.toString() + "\n" + stderrStream.toString()
       if (exitCode != 0) throw new CheckerException(output)
