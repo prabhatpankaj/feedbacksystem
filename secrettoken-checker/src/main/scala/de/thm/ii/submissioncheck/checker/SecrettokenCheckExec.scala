@@ -24,14 +24,15 @@ class SecrettokenCheckExec(override val compile_production: Boolean) extends Bas
     * perform a check of request, will be executed after processing the kafka message
     * @param taskid submissions task id
     * @param submissionid submitted submission id
-    * @param submittedFilePath path of submitted file (if zip or something, it is also a "file"
+    * @param subBasePath, subFileame path of folder, where submitted file is in
+    * @param subFilename path of submitted file (if zip or something, it is also a "file")
     * @param isInfo execute info procedure for given task
     * @param use_extern include an existing file, from previous checks
     * @param jsonMap complete submission payload
     * @return check succeeded, output string, exitcode
     */
-  override def exec(taskid: String, submissionid: String, submittedFilePath: String, isInfo: Boolean, use_extern: Boolean, jsonMap: Map[String, Any]):
-  (Boolean, String, Int, String) = {
+  override def exec(taskid: String, submissionid: String, subBasePath: Path, subFilename: Path, isInfo: Boolean, use_extern: Boolean,
+                    jsonMap: Map[String, Any]): (Boolean, String, Int, String) = {
     val dockerRelPath = System.getenv("HOST_UPLOAD_DIR")
     val (basepath, checkerfiles) = loadCheckerConfig(taskid)
 
@@ -49,6 +50,7 @@ class SecrettokenCheckExec(override val compile_production: Boolean) extends Bas
     val testfileEnvParam = if (testfileFile.exists() && testfileFile.isFile) { testfilePath } else ""
     val bashDockerImage = System.getenv("BASH_DOCKER")
     var seq: Seq[String] = null
+    val submittedFilePath = subFilename.toAbsolutePath.toString
 
     val infoArgument = if (isInfo) "info" else ""
     val name = jsonMap("username").asInstanceOf[String]
