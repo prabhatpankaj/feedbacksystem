@@ -116,18 +116,18 @@ class NodeCheckExec(override val compile_production: Boolean) extends BaseChecke
     catch {
       case e: FileAlreadyExistsException => { }
     }
-    if (compile_production){
-      seq = Seq("run", "--rm", __option_v, dockerRelPath + __slash + nodeTestPath.toString.replace(ULDIR, "") + __colon + insideDockerNodeTestPath, __option_v,
-        dockerRelPath + __slash + relatedSubPath.replace(ULDIR, "") + __colon + insideDockerNodeTestPath + __slash + "src", __option_v,
-        dockerRelPath + __slash + resultsPath.toString.replace(ULDIR, "") + __colon + insideDockerNodeResPath,
+    //if (compile_production){
+      seq = Seq("run", "--rm", __option_v, nodeTestPath.toString.replace(ULDIR, "") + __colon + insideDockerNodeTestPath, __option_v,
+        relatedSubPath.replace(ULDIR, "") + __colon + insideDockerNodeTestPath + __slash + "src", __option_v,
+        resultsPath.toString.replace(ULDIR, "") + __colon + insideDockerNodeResPath,
         nodeDockerImage, interpreter, action, infoArgument)
-    } else {
+    /*} else {
       val absSubPath = Paths.get(relatedSubPath).toAbsolutePath.toString
       val absNodeTestPath = Paths.get(nodeTestPath).toAbsolutePath.toString
       seq = Seq("run", "--rm", __option_v, absNodeTestPath + __colon + insideDockerNodeTestPath, __option_v, absSubPath + __colon
         + insideDockerNodeTestPath + __slash + "src", __option_v,
         resultsPath.toAbsolutePath.toString + __colon +  insideDockerNodeResPath, nodeDockerImage, interpreter, action, infoArgument)
-    }
+    }*/
     logger.warning(seq.toString())
     val stdoutStream = new StringBuilder; val stderrStream = new StringBuilder
     val procLogger = ProcessLogger((o: String) => stdoutStream.append(o), (e: String) => stderrStream.append(e))
