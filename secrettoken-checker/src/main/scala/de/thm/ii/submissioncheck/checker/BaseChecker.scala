@@ -270,14 +270,15 @@ class BaseChecker(val compile_production: Boolean) {
   /**
     * simple wrapper of java's tmp file generation
     * @param placeholder some extra infos in path
-    * @return a path to a temporaly file
+    * @return a path to a temporarily file
     */
   def getTempFile(placeholder: String = ""): Path = {
-    val tmppath = if (System.getProperty("os.name") == "Mac OS X") {
+    /*val tmppath = if (System.getProperty("os.name") == "Mac OS X") {
       new File("/tmp").toPath.resolve(s"submission_${placeholder}_tmp_${Secrets.getSHAStringFromNow()}")
     } else {
       File.createTempFile(s"submission_${placeholder}_tmp_${Secrets.getSHAStringFromNow()}", "").toPath
-    }
+    }*/
+    val tmppath = new File("/tmp").toPath.resolve(s"submission_${placeholder}_tmp_${Secrets.getSHAStringFromNow()}")
     tmppath.toFile.mkdir() // generate a folder of it
     tmppath
   }
