@@ -65,7 +65,7 @@ class SecrettokenCheckExec(override val compile_production: Boolean) extends Bas
         __option_v, submittedFilePath + __colon + submittedFilePath, "--env", "TESTFILE_PATH=" + testfileEnvParam, bashDockerImage, interpreter,
         "/" + absPath, name, submittedFilePath, infoArgument)
     }
-
+    logger.warning(seq.toString())
     val stdoutStream = new StringBuilder; val stderrStream = new StringBuilder
     val procLogger = ProcessLogger((o: String) => stdoutStream.append(o), (e: String) => stderrStream.append(e))
     var exitCode = Process("docker", seq).!(procLogger)

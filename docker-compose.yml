@@ -75,6 +75,7 @@ services:
     - ws
     environment:
       HOST_UPLOAD_DIR: "${PWD}/secrettoken-checker/upload-dir"
+      HOST_TMP_DIR: "/tmp/secrettoken-checker"
       BASH_DOCKER: "submissioncheck_bash1"
     volumes:
     - /var/run/:/var/run/

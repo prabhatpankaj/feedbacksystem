@@ -278,9 +278,14 @@ class BaseChecker(val compile_production: Boolean) {
     } else {
       File.createTempFile(s"submission_${placeholder}_tmp_${Secrets.getSHAStringFromNow()}", "").toPath
     }*/
-    val tmppath = new File("/tmp").toPath.resolve(s"submission_${placeholder}_tmp_${Secrets.getSHAStringFromNow()}")
+    if (!Paths.get("/dockertemp").toFile.exists()){
+      throw new CheckerException("Folder /dockertemp need to mounted from HOST system")
+    }
+    val tmpdir = s"submission_${placeholder}_tmp_${Secrets.getSHAStringFromNow()}"
+    val tmppath = new File("/dockertemp").toPath.resolve(tmpdir)
     tmppath.toFile.mkdir() // generate a folder of it
-    tmppath
+
+    if (compile_production) new File(System.getenv("HOST_TMP_DIR")).toPath.resolve(tmpdir) else tmppath
   }
 
   private def generateAndGetTempSubmittedFilePath(originalPath: Path, subid: String) = {
