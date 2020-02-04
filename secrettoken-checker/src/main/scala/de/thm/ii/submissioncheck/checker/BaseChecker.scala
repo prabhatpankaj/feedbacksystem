@@ -8,7 +8,8 @@ import java.util.zip.ZipInputStream
 
 import akka.Done
 import de.thm.ii.submissioncheck.{JsonHelper, ResultType, SecretTokenChecker}
-import de.thm.ii.submissioncheck.SecretTokenChecker.{DATA, LABEL_ACCEPT, LABEL_ERROR, LABEL_ERROR_DOWNLOAD, LABEL_ISINFO, LABEL_SUBMISSIONID, LABEL_TASKID, LABEL_TOKEN, LABEL_USE_EXTERN, ULDIR, downloadSubmittedFileToFS, logger, saveStringToFile, sendMessage}
+import de.thm.ii.submissioncheck.SecretTokenChecker.{DATA, LABEL_ACCEPT, LABEL_ERROR, LABEL_ERROR_DOWNLOAD, LABEL_ISINFO,
+  LABEL_SUBMISSIONID, LABEL_TASKID, LABEL_TOKEN, LABEL_USE_EXTERN, ULDIR, downloadSubmittedFileToFS, logger, saveStringToFile, sendMessage}
 import de.thm.ii.submissioncheck.security.Secrets
 import de.thm.ii.submissioncheck.services.FileOperations
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -133,7 +134,7 @@ class BaseChecker(val compile_production: Boolean) {
     * @return base path and config path
     */
   def loadCheckerConfig(taskid: String): (Path, List[Path]) = {
-    logger.warning(s"Load ${checkername} Checker Config at ${checkernameExtened}")
+    logger.warning(s"Load ${checkername} Checker Config at ${checkernameExtened} ")
     val baseFilePath = Paths.get(ULDIR).resolve(taskid).resolve(checkernameExtened)
     val configfiles = configFiles.keys.map(f => baseFilePath.resolve(f)).toList.filter(f => f.toFile.exists())
     (baseFilePath, configfiles)
@@ -287,7 +288,6 @@ class BaseChecker(val compile_production: Boolean) {
 
     FileOperations.copy(originalPath.getParent.toFile, tmppath.toFile)
     //Files.copy(originalPath, Files.newOutputStream(tmpfile))
-    println((tmppath, tmpfile))
     (tmppath, tmpfile)
   }
 
