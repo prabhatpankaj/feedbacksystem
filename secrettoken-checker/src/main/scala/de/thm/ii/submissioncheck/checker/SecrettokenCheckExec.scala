@@ -44,10 +44,8 @@ class SecrettokenCheckExec(override val compile_production: Boolean) extends Bas
     if (scriptContent.split("\n").head.matches("#!.*php.*")) interpreter = "php"
 
     val absPath = scriptFile.getAbsolutePath
-    val testfileFile = new File(basepath.resolve("testfile").toString)
-    val testfilePathRel = testfileFile.getPath
-    val testfilePath = testfileFile.getAbsolutePath
-    val testfileEnvParam = if (testfileFile.exists() && testfileFile.isFile) { testfilePath } else ""
+    val testfileFile = basepath.resolve("testfile").toFile
+
     val bashDockerImage = System.getenv("BASH_DOCKER")
     var seq: Seq[String] = null
     val submittedFilePath = (if (true) getCorespondigHOSTTempDir(subFilename) else subFilename).toString
@@ -56,14 +54,19 @@ class SecrettokenCheckExec(override val compile_production: Boolean) extends Bas
     val name = jsonMap("username").asInstanceOf[String]
 
     val mountingOrgScriptPath = if (compile_production) {
-      logger.warning("LINE 59: " + dockerRelPath + " " + scriptpath)
-      logger.warning("LINE 61: " + scriptpath)
       dockerRelPath + __slash + scriptpath.replace(ULDIR, "")
     } else {
       absPath
     }
+    val mountingTestfilePath = if (compile_production) {
+      dockerRelPath + __slash + testfileFile.toPath.toAbsolutePath.toString.replace(ULDIR, "")
+    } else {
+      testfileFile.toPath.toAbsolutePath.toString
+    }
 
-    seq = Seq("run", "--rm", __option_v, mountingOrgScriptPath + ":" + absPath, __option_v, testfilePath + ":" + testfilePath,
+    val testfileEnvParam = if (testfileFile.exists() && testfileFile.isFile) { mountingTestfilePath } else ""
+
+    seq = Seq("run", "--rm", __option_v, mountingOrgScriptPath + ":" + absPath, __option_v, mountingTestfilePath + ":" + mountingTestfilePath,
       __option_v, submittedFilePath + __colon + submittedFilePath, "--env", "TESTFILE_PATH=" + testfileEnvParam, bashDockerImage, interpreter,
       absPath, name, submittedFilePath, infoArgument)
 
