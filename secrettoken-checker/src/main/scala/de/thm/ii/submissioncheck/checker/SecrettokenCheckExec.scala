@@ -50,25 +50,21 @@ class SecrettokenCheckExec(override val compile_production: Boolean) extends Bas
     val testfileEnvParam = if (testfileFile.exists() && testfileFile.isFile) { testfilePath } else ""
     val bashDockerImage = System.getenv("BASH_DOCKER")
     var seq: Seq[String] = null
-    val submittedFilePath = subFilename.toAbsolutePath.toString
+    val submittedFilePath = (if (true) getCorespondigHOSTTempDir(subFilename) else subFilename).toString
 
     val infoArgument = if (isInfo) "info" else ""
     val name = jsonMap("username").asInstanceOf[String]
-    seq = Seq("run", "--rm", __option_v, absPath + ":" + absPath, __option_v, testfilePath + ":" + testfilePath,
+
+    val mountingOrgScriptPath = if (compile_production) {
+      dockerRelPath + __slash + scriptpath.replace(ULDIR, "")
+    } else {
+      absPath
+    }
+
+    seq = Seq("run", "--rm", __option_v, mountingOrgScriptPath + ":" + absPath, __option_v, testfilePath + ":" + testfilePath,
       __option_v, submittedFilePath + __colon + submittedFilePath, "--env", "TESTFILE_PATH=" + testfileEnvParam, bashDockerImage, interpreter,
       absPath, name, submittedFilePath, infoArgument)
 
-    /*if (compile_production) {
-      seq = Seq("run", "--rm", __option_v, dockerRelPath + __slash + scriptpath.replace(ULDIR, "") + __colon + scriptpath,
-        __option_v, dockerRelPath + __slash + testfilePathRel.replace(ULDIR, "") + __colon + __slash + testfilePath, __option_v,
-        dockerRelPath + __slash + submittedFilePath.replace(ULDIR, "") + __colon + submittedFilePath, "--env",
-        "TESTFILE_PATH=" + testfileEnvParam, bashDockerImage, interpreter, scriptpath, name, submittedFilePath, infoArgument)
-      // "-c", "'ls -al " + scriptpath + "; cat " + scriptpath + "'")
-    } else {
-      seq = Seq("run", "--rm", __option_v, absPath + ":/" + absPath, __option_v, testfilePath + ":/" + testfilePath,
-        __option_v, submittedFilePath + __colon + submittedFilePath, "--env", "TESTFILE_PATH=" + testfileEnvParam, bashDockerImage, interpreter,
-        "/" + absPath, name, submittedFilePath, infoArgument)
-    }*/
     logger.warning(seq.toString())
     val stdoutStream = new StringBuilder; val stderrStream = new StringBuilder
     val procLogger = ProcessLogger((o: String) => stdoutStream.append(o), (e: String) => stderrStream.append(e))

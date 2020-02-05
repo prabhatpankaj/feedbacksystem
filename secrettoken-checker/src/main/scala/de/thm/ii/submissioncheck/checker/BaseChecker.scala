@@ -267,12 +267,14 @@ class BaseChecker(val compile_production: Boolean) {
     }
   }
 
+  private val insideDockerDockerTemp = Paths.get("/dockertemp")
+
   /**
     * simple wrapper of java's tmp file generation
     * @param placeholder some extra infos in path
     * @return path on host and inside docker (tuple)
     */
-  def getTempFile(placeholder: String = ""): (Path, Path) = {
+  def getTempFile(placeholder: String = ""): Path = {
     /*val tmppath = if (System.getProperty("os.name") == "Mac OS X") {
       new File("/tmp").toPath.resolve(s"submission_${placeholder}_tmp_${Secrets.getSHAStringFromNow()}")
     } else {
@@ -283,7 +285,7 @@ class BaseChecker(val compile_production: Boolean) {
       localTmpPath.toFile.mkdirs()
       localTmpPath
     } else {
-      new File("/dockertemp").toPath
+      insideDockerDockerTemp
     }
 
     if (!dockertemp.toFile.exists()){
@@ -293,18 +295,29 @@ class BaseChecker(val compile_production: Boolean) {
     val tmppath = dockertemp.resolve(tmpdir)
     tmppath.toFile.mkdir() // generate a folder of it
 
-    val hostTMPDir = if (System.getenv("HOST_TMP_DIR") != null) System.getenv("HOST_TMP_DIR") else "/tmp"
-    (new File(hostTMPDir).toPath.resolve(tmpdir), tmppath)
+    //val hostTMPDir = if (System.getenv("HOST_TMP_DIR") != null) System.getenv("HOST_TMP_DIR") else "/tmp"
+    //(new File(hostTMPDir).toPath.resolve(tmpdir), )
+    tmppath
+  }
+
+  /**
+    * get corresponsing temp dir path of host, to get docker in docker run
+    * @param appTempDir path accessable from app
+    * @return path of host system, if a host exists
+    */
+  def getCorespondigHOSTTempDir(appTempDir: Path): Path = {
+    if (compile_production) {
+      Paths.get(System.getenv("HOST_TMP_DIR")).resolve(appTempDir.subpath(insideDockerDockerTemp.getNameCount, appTempDir.getNameCount))
+    } else {
+      throw new CheckerException("getCorespondigHOSTTempDir in local dev is not defined")
+    }
   }
 
   private def generateAndGetTempSubmittedFilePath(originalPath: Path, subid: String) = {
-    val tmppaths = getTempFile(subid)
-
     // for copy we need the folder where our app has access to
-    val copyTempPath = tmppaths._2
-    val tmppath = if (compile_production) tmppaths._1 else tmppaths._2
+    val copyTempPath = getTempFile(subid)
 
-    val tmpfile = tmppath.resolve(originalPath.toFile.getName)
+    val tmpfile = copyTempPath.resolve(originalPath.toFile.getName)
 
     logger.warning("generateAndGetTempSubmittedFilePath: " + originalPath.toString)
     logger.warning("copy process")
@@ -313,7 +326,7 @@ class BaseChecker(val compile_production: Boolean) {
 
     FileOperations.copy(originalPath.getParent.toFile, copyTempPath.toFile)
     //Files.copy(originalPath, Files.newOutputStream(tmpfile))
-    (tmppath, tmpfile)
+    (copyTempPath, tmpfile)
   }
 
   /**
