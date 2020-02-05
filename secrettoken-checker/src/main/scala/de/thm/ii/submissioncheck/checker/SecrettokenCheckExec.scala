@@ -58,7 +58,6 @@ class SecrettokenCheckExec(override val compile_production: Boolean) extends Bas
       __option_v, submittedFilePath + __colon + submittedFilePath, "--env", "TESTFILE_PATH=" + testfileEnvParam, bashDockerImage, interpreter,
       "/" + absPath, name, submittedFilePath, infoArgument)
 
-
     /*if (compile_production) {
       seq = Seq("run", "--rm", __option_v, dockerRelPath + __slash + scriptpath.replace(ULDIR, "") + __colon + scriptpath,
         __option_v, dockerRelPath + __slash + testfilePathRel.replace(ULDIR, "") + __colon + __slash + testfilePath, __option_v,
