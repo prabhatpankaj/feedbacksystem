@@ -56,6 +56,8 @@ class SecrettokenCheckExec(override val compile_production: Boolean) extends Bas
     val name = jsonMap("username").asInstanceOf[String]
 
     val mountingOrgScriptPath = if (compile_production) {
+      logger.warning("LINE 59: " + dockerRelPath + " " + scriptpath)
+      logger.warning("LINE 61: " + scriptpath)
       dockerRelPath + __slash + scriptpath.replace(ULDIR, "")
     } else {
       absPath

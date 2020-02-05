@@ -362,6 +362,7 @@ class BaseChecker(val compile_production: Boolean) {
         submittedFilePath = saveStringToFile(jsonMap(DATA).asInstanceOf[String], task_id.toString, submission_id.toString)
       }
       val (subBasePath, subFilename) = generateAndGetTempSubmittedFilePath(submittedFilePath, submission_id.toString)
+      logger.warning( (subBasePath, subFilename).toString() )
       val (success, output, exitcode, datatype) = exec(task_id.toString, submission_id.toString, subBasePath, subFilename, isInfo, use_extern, jsonMap)
 
       // Copy generated files, output and stuff to the original submission folder, for multichecks. The next checker needs access to this files
