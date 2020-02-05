@@ -292,6 +292,7 @@ class BaseChecker(val compile_production: Boolean) {
     val tmppath = getTempFile(subid)
     val tmpfile = tmppath.resolve(originalPath.toFile.getName)
 
+    logger.warning("generateAndGetTempSubmittedFilePath: " + originalPath.toString)
     FileOperations.copy(originalPath.getParent.toFile, tmppath.toFile)
     //Files.copy(originalPath, Files.newOutputStream(tmpfile))
     (tmppath, tmpfile)
