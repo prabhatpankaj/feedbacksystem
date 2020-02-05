@@ -75,7 +75,9 @@ class NodeCheckExec(override val compile_production: Boolean) extends BaseChecke
   }
 
   private def copyNodeConfigToTmp(orgpath: Path) = {
-    val tmpdir = getTempFile("nodetest")
+    val tmpdirs = getTempFile("nodetest")
+    val tmpdir = if (compile_production) tmpdirs._1 else tmpdirs._2
+
     FileOperations.copy(orgpath.toFile, tmpdir.toFile)
     tmpdir
   }

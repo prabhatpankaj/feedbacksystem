@@ -270,9 +270,9 @@ class BaseChecker(val compile_production: Boolean) {
   /**
     * simple wrapper of java's tmp file generation
     * @param placeholder some extra infos in path
-    * @return a path to a temporarily file
+    * @return path on host and inside docker (tuple)
     */
-  def getTempFile(placeholder: String = ""): Path = {
+  def getTempFile(placeholder: String = ""): (Path, Path) = {
     /*val tmppath = if (System.getProperty("os.name") == "Mac OS X") {
       new File("/tmp").toPath.resolve(s"submission_${placeholder}_tmp_${Secrets.getSHAStringFromNow()}")
     } else {
@@ -287,25 +287,31 @@ class BaseChecker(val compile_production: Boolean) {
     }
 
     if (!dockertemp.toFile.exists()){
-      throw new CheckerException(s"Folder ${dockertemp} need to mounted from HOST system")
+      throw new CheckerException(s"Folder ${dockertemp} need to mounted / created from HOST system")
     }
     val tmpdir = s"submission_${placeholder}_tmp_${Secrets.getSHAStringFromNow()}"
     val tmppath = dockertemp.resolve(tmpdir)
     tmppath.toFile.mkdir() // generate a folder of it
 
-    if (compile_production) new File(System.getenv("HOST_TMP_DIR")).toPath.resolve(tmpdir) else tmppath
+    val hostTMPDir = if (System.getenv("HOST_TMP_DIR") != null) System.getenv("HOST_TMP_DIR") else "/tmp"
+    (new File(hostTMPDir).toPath.resolve(tmpdir), tmppath)
   }
 
   private def generateAndGetTempSubmittedFilePath(originalPath: Path, subid: String) = {
-    val tmppath = getTempFile(subid)
+    val tmppaths = getTempFile(subid)
+
+    // for copy we need the folder where our app has access to
+    val copyTempPath = tmppaths._2
+    val tmppath = if (compile_production) tmppaths._1 else tmppaths._2
+
     val tmpfile = tmppath.resolve(originalPath.toFile.getName)
 
     logger.warning("generateAndGetTempSubmittedFilePath: " + originalPath.toString)
     logger.warning("copy process")
     logger.warning(originalPath.getParent.toFile.toString)
-    logger.warning(tmppath.toFile.toString)
+    logger.warning(copyTempPath.toFile.toString)
 
-    FileOperations.copy(originalPath.getParent.toFile, tmppath.toFile)
+    FileOperations.copy(originalPath.getParent.toFile, copyTempPath.toFile)
     //Files.copy(originalPath, Files.newOutputStream(tmpfile))
     (tmppath, tmpfile)
   }
