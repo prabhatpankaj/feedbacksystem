@@ -278,11 +278,19 @@ class BaseChecker(val compile_production: Boolean) {
     } else {
       File.createTempFile(s"submission_${placeholder}_tmp_${Secrets.getSHAStringFromNow()}", "").toPath
     }*/
-    if (!Paths.get("/dockertemp").toFile.exists()){
-      throw new CheckerException("Folder /dockertemp need to mounted from HOST system")
+    val dockertemp = if (!compile_production){
+      val localTmpPath = new File("/tmp").toPath.resolve("fb-dockertemp")
+      localTmpPath.toFile.mkdirs()
+      localTmpPath
+    } else {
+      new File("/dockertemp").toPath
+    }
+
+    if (!dockertemp.toFile.exists()){
+      throw new CheckerException(s"Folder ${dockertemp} need to mounted from HOST system")
     }
     val tmpdir = s"submission_${placeholder}_tmp_${Secrets.getSHAStringFromNow()}"
-    val tmppath = new File("/dockertemp").toPath.resolve(tmpdir)
+    val tmppath = dockertemp.resolve(tmpdir)
     tmppath.toFile.mkdir() // generate a folder of it
 
     if (compile_production) new File(System.getenv("HOST_TMP_DIR")).toPath.resolve(tmpdir) else tmppath
@@ -293,6 +301,9 @@ class BaseChecker(val compile_production: Boolean) {
     val tmpfile = tmppath.resolve(originalPath.toFile.getName)
 
     logger.warning("generateAndGetTempSubmittedFilePath: " + originalPath.toString)
+    logger.warning("copy process")
+    logger.warning(originalPath.getParent.toFile.toString)
+    logger.warning(tmppath.toFile.toString)
 
     FileOperations.copy(originalPath.getParent.toFile, tmppath.toFile)
     //Files.copy(originalPath, Files.newOutputStream(tmpfile))
