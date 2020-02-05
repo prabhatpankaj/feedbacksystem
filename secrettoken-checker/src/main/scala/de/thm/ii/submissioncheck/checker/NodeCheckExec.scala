@@ -104,16 +104,22 @@ class NodeCheckExec(override val compile_production: Boolean) extends BaseChecke
     var seq: Seq[String] = null; val dockerRelPath = System.getenv("HOST_UPLOAD_DIR")
     val infoArgument = if (isInfo) "info" else ""
     val nodeTestOrg = Paths.get(ULDIR).resolve(taskid.toString).resolve(checkernameExtened).resolve(LABEL_NODETEST)
-    val nodeTestPath = getFullNPMPath(copyNodeConfigToTmp(nodeTestOrg).toString)
+    var nodeTestPath = getFullNPMPath(copyNodeConfigToTmp(nodeTestOrg).toString)
     val (insideDockerNodeTestPath, insideDockerNodeResPath) = ("/usr/src/app", "/usr/src/results")
-    val relatedSubPath = if (use_extern) subBasePath.toString else getFullSubPath(subBasePath.resolve("unzip").toString)
+    var relatedSubPath = if (use_extern) subBasePath.toString else getFullSubPath(subBasePath.resolve("unzip").toString)
     val resultsPath = subBasePath.resolve("results")
     resultsPath.toFile.mkdirs()
 
+    if (compile_production) {
+      nodeTestPath = getCorespondigHOSTTempDir(Paths.get(nodeTestPath)).toString
+      relatedSubPath = getCorespondigHOSTTempDir(Paths.get(relatedSubPath)).toString
+    }
+
+    val resultsPathAdapt = (if (compile_production) getCorespondigHOSTTempDir(resultsPath) else resultsPath).toString
+
     //if (compile_production){
-      seq = Seq("run", "--rm", __option_v, nodeTestPath.toString.replace(ULDIR, "") + __colon + insideDockerNodeTestPath, __option_v,
-        relatedSubPath.replace(ULDIR, "") + __colon + insideDockerNodeTestPath + __slash + "src", __option_v,
-        resultsPath.toString.replace(ULDIR, "") + __colon + insideDockerNodeResPath,
+      seq = Seq("run", "--rm", __option_v, nodeTestPath + __colon + insideDockerNodeTestPath, __option_v,
+        relatedSubPath + __colon + insideDockerNodeTestPath + __slash + "src", __option_v, resultsPathAdapt + __colon + insideDockerNodeResPath,
         nodeDockerImage, interpreter, action, infoArgument)
     /*} else {
       val absSubPath = Paths.get(relatedSubPath).toAbsolutePath.toString
