@@ -1,15 +1,16 @@
 package de.thm.ii.submissioncheck.checker
 
-import java.io.{BufferedReader, File, FileInputStream, FileOutputStream, InputStream, InputStreamReader}
+import java.io.{BufferedInputStream, BufferedReader, File, FileInputStream, FileOutputStream, InputStream, InputStreamReader}
 import java.net.{HttpURLConnection, URLDecoder}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{FileAlreadyExistsException, Files, Path, Paths, StandardCopyOption}
+import java.util.Base64
 import java.util.zip.ZipInputStream
 
 import akka.Done
 import de.thm.ii.submissioncheck.{JsonHelper, ResultType, SecretTokenChecker}
-import de.thm.ii.submissioncheck.SecretTokenChecker.{DATA, LABEL_ACCEPT, LABEL_ERROR, LABEL_ERROR_DOWNLOAD, LABEL_ISINFO,
-  LABEL_SUBMISSIONID, LABEL_TASKID, LABEL_TOKEN, LABEL_USE_EXTERN, ULDIR, downloadSubmittedFileToFS, logger, saveStringToFile, sendMessage}
+import de.thm.ii.submissioncheck.SecretTokenChecker.{DATA, LABEL_ACCEPT, LABEL_ERROR, LABEL_ERROR_DOWNLOAD, LABEL_ISINFO, LABEL_SUBMISSIONID,
+  LABEL_TASKID, LABEL_TOKEN, LABEL_USE_EXTERN, ULDIR, downloadSubmittedFileToFS, logger, saveStringToFile, sendMessage}
 import de.thm.ii.submissioncheck.security.Secrets
 import de.thm.ii.submissioncheck.services.FileOperations
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -138,6 +139,37 @@ class BaseChecker(val compile_production: Boolean) {
     val baseFilePath = Paths.get(ULDIR).resolve(taskid).resolve(checkernameExtened)
     val configfiles = configFiles.keys.map(f => baseFilePath.resolve(f)).toList.filter(f => f.toFile.exists())
     (baseFilePath, configfiles)
+  }
+
+  /**
+    * encode file to base64 string
+    * @param filepath input file
+    * @return base64 encoding
+    */
+  def base64Encode(filepath: Path): String = {
+    val bis = new BufferedInputStream(new FileInputStream(filepath.toAbsolutePath.toString))
+    val bArray: Array[Byte] = Stream.continually(bis.read).takeWhile(-1 !=).map(_.toByte).toArray
+    val output: String = Base64.getEncoder.encodeToString(bArray)
+    output
+  }
+
+  /**
+    * send messages (indirectly) initated fromthe testsystem to the WebService (ws), which provides i.e. additional
+    * information of tasks (plagiat check) or similiar things.
+    * In WS for the provided subject a handles has to exists, which process the provided data as the encoding is known.
+    * Everything will be send as string, so a suitable format should be defined
+    * @param subject subject where handlers are registred at
+    * @param data encoded data as string
+    * @return future state of kafka message
+    */
+  def additionalMessagetoWS(subject: String, data: String): Future[Done] = {
+    val message = JsonHelper.mapToJsonStr(Map(
+      "data" -> data,
+      "subject"-> subject,
+      "testsystem_id" -> checkername
+    ))
+
+    sendMessage(new ProducerRecord[String, String]("testsystem_message_data", message))
   }
 
   /**

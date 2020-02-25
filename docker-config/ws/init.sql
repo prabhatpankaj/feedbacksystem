@@ -15,6 +15,8 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
+
+
 --
 -- Table structure for table `course`
 --
@@ -437,5 +439,25 @@ CREATE TABLE `user_course` (
   CONSTRAINT `user_has_courses_users_user_id_fk` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+
+create table task_extension
+(
+	taskid int null,
+	userid int null,
+	subject varchar(255) null,
+	data text null,
+	constraint task_extension_task_task_id_fk
+		foreign key (taskid) references task (task_id),
+	constraint task_extension_user_user_id_fk
+		foreign key (userid) references user (user_id)
+);
+
+alter table task_extension
+	add constraint task_extension_pk
+		primary key (taskid, userid, subject);
+
+alter table task_extension
+	add info_typ VARCHAR(255) null;
 
 
