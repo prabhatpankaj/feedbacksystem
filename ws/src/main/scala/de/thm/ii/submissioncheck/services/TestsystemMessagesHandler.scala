@@ -1,14 +1,11 @@
 package de.thm.ii.submissioncheck.services
 import java.io.{File, FileOutputStream}
-import java.util.{Timer, TimerTask}
 
 import de.thm.ii.submissioncheck.misc.JsonParser
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.io.FileUtils
 import org.slf4j.{Logger, LoggerFactory}
-import org.springframework.beans.factory.SmartInitializingSingleton
 import org.springframework.beans.factory.annotation.{Autowired, Value}
-import org.springframework.context.annotation.Bean
 import org.springframework.stereotype.Component
 
 /**
@@ -33,22 +30,7 @@ class TestsystemMessagesHandler {
     * Using autowired configuration, they will be loaded after self initialization
     */
   def configurateStorageService(): Unit = {
-    this.storageService = new StorageService(compile_production)
-  }
-
-  /**
-    * After autowiring initialize storage service
-    * @return timer run
-    */
-  @Bean
-  def importStorageProcessor: SmartInitializingSingleton = () => {
-    /** wait 3 seconds to be sure everything is connected like it should*/
-    val bean_delay = 300
-    new Timer().schedule(new TimerTask() {
-      override def run(): Unit = {
-        configurateStorageService
-      }
-    }, bean_delay)
+    if (this.storageService == null) this.storageService = new StorageService(compile_production)
   }
 
   private def base64Decode(raw: String, output: File) = {
@@ -65,6 +47,7 @@ class TestsystemMessagesHandler {
     * @param msgID message has an id (name of shared messages folder)
     */
   def plagiatPackedZipHandler(testsystem: String, data: String, msgID: String): Unit = {
+    configurateStorageService
     val answeredMap = JsonParser.jsonStrToMap(data)
     val userid = answeredMap(LABEL_USER_ID).toString.toInt
     val taskid = answeredMap(LABEL_TASK_ID).toString.toInt
@@ -92,8 +75,6 @@ class TestsystemMessagesHandler {
     try {
       logger.warn(answeredMap.toString())
 
-      val taskId = answeredMap(LABEL_TASK_ID).toString.toInt
-
       val submissionlist = answeredMap("submissionlist").asInstanceOf[List[Map[String, Boolean]]]
       for (submission <- submissionlist) {
         taskService.setPlagiatPassedForSubmission(submission.keys.head, submission.values.head)
@@ -109,6 +90,7 @@ class TestsystemMessagesHandler {
     * @return if tidy up succeeded
     */
   def tidyUpFile(msgID: String): Boolean = {
+    configurateStorageService()
     val mainFolder = storageService.sharedMessagedPath.resolve(msgID).toFile
     if (mainFolder.exists()) FileOperations.rmdir(mainFolder) else true
   }

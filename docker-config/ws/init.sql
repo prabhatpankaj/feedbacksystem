@@ -440,24 +440,18 @@ CREATE TABLE `user_course` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
-
-create table task_extension
-(
-	taskid int null,
-	userid int null,
-	subject varchar(255) null,
-	data text null,
-	constraint task_extension_task_task_id_fk
-		foreign key (taskid) references task (task_id),
-	constraint task_extension_user_user_id_fk
-		foreign key (userid) references user (user_id)
-);
-
-alter table task_extension
-	add constraint task_extension_pk
-		primary key (taskid, userid, subject);
-
-alter table task_extension
-	add info_typ VARCHAR(255) null;
-
-
+DROP TABLE IF EXISTS `task_extension`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `task_extension` (
+  `taskid` int NOT NULL,
+  `userid` int NOT NULL,
+  `subject` varchar(255) NOT NULL,
+  `data` text,
+  `info_typ` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`taskid`,`userid`,`subject`),
+  KEY `task_extension_user_user_id_fk` (`userid`),
+  CONSTRAINT `task_extension_task_task_id_fk` FOREIGN KEY (`taskid`) REFERENCES `task` (`task_id`),
+  CONSTRAINT `task_extension_user_user_id_fk` FOREIGN KEY (`userid`) REFERENCES `user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
