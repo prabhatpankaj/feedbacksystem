@@ -48,7 +48,7 @@ class StorageService(compile_production: Boolean) {
     * dynamically get path whether it is dev or production
     * @return path to shared folder between testsystems and webservice (ws)
     */
-  def sharedMessagedPath: Path = Paths.get(if (compile_production) __slash else "" + "shared-messages")
+  def sharedMessagedPath: Path = Paths.get((if (compile_production) __slash else "") + "shared-messages")
 
   /**
     * Delete a submission File
