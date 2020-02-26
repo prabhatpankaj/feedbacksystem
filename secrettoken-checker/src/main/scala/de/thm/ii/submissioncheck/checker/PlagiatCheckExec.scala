@@ -136,7 +136,6 @@ class PlagiatCheckExec(override val compile_production: Boolean) extends BaseChe
     val topic = "plagiarismcheckerAnswer"
 
     val msg = JsonHelper.mapToJsonStr(Map(LABEL_TASKID -> taskid.toString, "submissionlist" -> List(Map(subid -> plagiatOK))))
-    logger.warning(msg)
     additionalMessagetoWS(topic, msg)
   }
 

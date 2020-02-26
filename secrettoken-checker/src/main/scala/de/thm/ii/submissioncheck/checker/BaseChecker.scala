@@ -1,20 +1,18 @@
 package de.thm.ii.submissioncheck.checker
 
-import java.io.{BufferedInputStream, BufferedReader, File, FileInputStream, FileOutputStream, InputStream, InputStreamReader}
+import java.io._
 import java.net.{HttpURLConnection, URLDecoder}
 import java.nio.charset.StandardCharsets
-import java.nio.file.{FileAlreadyExistsException, Files, Path, Paths, StandardCopyOption}
+import java.nio.file._
 import java.util.Base64
 import java.util.zip.ZipInputStream
 
 import akka.Done
-import de.thm.ii.submissioncheck.{JsonHelper, ResultType, SecretTokenChecker}
-import de.thm.ii.submissioncheck.SecretTokenChecker.{DATA, LABEL_ACCEPT, LABEL_ERROR, LABEL_ERROR_DOWNLOAD, LABEL_ISINFO, LABEL_SUBMISSIONID,
-  LABEL_TASKID, LABEL_TOKEN, LABEL_USE_EXTERN, ULDIR, downloadSubmittedFileToFS, logger, saveStringToFile, sendMessage}
+import de.thm.ii.submissioncheck.SecretTokenChecker.{DATA, LABEL_ACCEPT, LABEL_ERROR, LABEL_ERROR_DOWNLOAD, LABEL_ISINFO, LABEL_SUBMISSIONID, LABEL_TASKID, LABEL_TOKEN, LABEL_USE_EXTERN, ULDIR, downloadSubmittedFileToFS, logger, saveStringToFile, sendMessage}
 import de.thm.ii.submissioncheck.security.Secrets
 import de.thm.ii.submissioncheck.services.FileOperations
+import de.thm.ii.submissioncheck.{JsonHelper, ResultType}
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.slf4j.LoggerFactory
 import org.apache.kafka.clients.producer.ProducerRecord
 
 import scala.concurrent.Future
@@ -168,9 +166,15 @@ class BaseChecker(val compile_production: Boolean) {
       "subject"-> subject,
       "testsystem_id" -> checkername
     ))
-
+    logger.warning("additionalMessagetoWS: " + message)
     sendMessage(new ProducerRecord[String, String]("testsystem_message_data", message))
   }
+
+  /**
+    * dynamically get path whether it is dev or production
+    * @return path to shared folder between testsystems and webservice (ws)
+    */
+  def sharedMessagedPath: Path = Paths.get(if (compile_production) "/" else "" + "shared-messages")
 
   /**
     * perform a check of request, will be executed after processing the kafka message

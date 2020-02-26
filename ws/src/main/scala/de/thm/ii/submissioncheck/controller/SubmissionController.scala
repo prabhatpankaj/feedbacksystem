@@ -1,26 +1,21 @@
 package de.thm.ii.submissioncheck.controller
 
 import java.nio.file.Paths
-import java.util.{Timer, TimerTask}
 
 import com.fasterxml.jackson.databind.JsonNode
 import de.thm.ii.submissioncheck.misc.{ResourceNotFoundException, UnauthorizedException}
-
-import scala.collection.JavaConverters._
-import de.thm.ii.submissioncheck.services.{CourseParamService, CourseService, NotificationService, StorageService, SubmissionService, TaskExtensionService,
-  TaskService, TestsystemMessagesHandler, TestsystemService, UserService}
+import de.thm.ii.submissioncheck.services._
 import javax.servlet.http.HttpServletRequest
-import org.springframework.beans.factory.SmartInitializingSingleton
+import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.{Autowired, Value}
-import org.springframework.context.annotation.Bean
 import org.springframework.core.io.{Resource, UrlResource}
 import org.springframework.http.{HttpHeaders, HttpStatus, ResponseEntity}
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.listener.KafkaMessageListenerContainer
-import org.springframework.stereotype.Controller
-import org.springframework.web.bind.annotation.{GetMapping, PathVariable, RequestBody, RequestMapping, RequestMethod,
-  RequestParam, ResponseBody, ResponseStatus, RestController}
+import org.springframework.web.bind.annotation._
 import org.springframework.web.multipart.MultipartFile
+
+import scala.collection.JavaConverters._
 
 /**
   * HomeController serve the Angular App and force every non registered "api" route to be a error 404
@@ -50,6 +45,7 @@ class SubmissionController {
   private val taskExtensionService: TaskExtensionService = null
   private var storageService: StorageService = null
 
+  private val logger: Logger = LoggerFactory.getLogger(classOf[SubmissionController])
   @Value("${spring.kafka.bootstrap-servers}")
   private val kafkaURL: String = null
   private final val application_json_value = "application/json"
@@ -79,23 +75,9 @@ class SubmissionController {
     * Using autowired configuration, they will be loaded after self initialization
     */
   def configurateStorageService(): Unit = {
-    this.storageService = new StorageService(compile_production)
+    if (this.storageService == null) this.storageService = new StorageService(compile_production)
   }
 
-  /**
-    * After autowiring initialize storage service
-    * @return timer run
-    */
-  @Bean
-  def importStorageProcessor: SmartInitializingSingleton = () => {
-    /** wait 3 seconds to be sure everything is connected like it should*/
-    val bean_delay = 300
-    new Timer().schedule(new TimerTask() {
-      override def run(): Unit = {
-        configurateStorageService
-      }
-    }, bean_delay)
-  }
 
   /**
     * re submit a task, i.e. its submission by the submission id
@@ -177,6 +159,7 @@ class SubmissionController {
     if (requestingUser.isEmpty || !taskService.hasSubscriptionForTask(taskid, requestingUser.get)) {
       throw new UnauthorizedException
     }
+    configurateStorageService()
 
     var message: Boolean = false
     var filename: String = ""
@@ -197,7 +180,7 @@ class SubmissionController {
       message = true
 
     } catch {
-      case e: Exception => {}
+      case e: Exception => {logger.warn(e.toString + e.getMessage)}
     }
     Map(LABEL_SUCCESS -> message, LABEL_FILENAME -> filename)
   }
@@ -267,6 +250,7 @@ class SubmissionController {
     if (testystem.isEmpty) {
       throw new UnauthorizedException(LABEL_DOWNLOAD_NOT_PERMITTED)
     }
+    configurateStorageService
     val filename = submissionService.getSubmittedFileBySubmission(subid)
     val file = storageService.loadFileBySubmission(filename, taskid, subid)
     ResponseEntity.ok.header(HttpHeaders.CONTENT_DISPOSITION, httpResponseHeaderValue(file)).body(file)

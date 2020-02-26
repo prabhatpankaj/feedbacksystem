@@ -1,36 +1,33 @@
 package de.thm.ii.submissioncheck.controller
 
-import java.net.{URLDecoder, URLEncoder}
+import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
-
-import org.joda.time.format.DateTimeFormat
-
-import scala.collection.JavaConverters._
-import java.util.{Base64, Date, NoSuchElementException, Timer, TimerTask}
+import java.util.{Date, NoSuchElementException, Timer, TimerTask}
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.node.ArrayNode
-import de.thm.ii.submissioncheck.TestsystemTestfileLabels
 import de.thm.ii.submissioncheck.misc.{BadRequestException, _}
-import de.thm.ii.submissioncheck.model.{TaskExtension, User}
+import de.thm.ii.submissioncheck.model.TaskExtension
 import de.thm.ii.submissioncheck.services.{TestsystemService, _}
 import javax.servlet.http.HttpServletRequest
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.SmartInitializingSingleton
 import org.springframework.beans.factory.annotation.{Autowired, Value}
 import org.springframework.context.annotation.Bean
-import org.springframework.core.io.{Resource, UrlResource}
+import org.springframework.core.io.Resource
 import org.springframework.http.{HttpHeaders, HttpStatus, ResponseEntity}
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.core.{DefaultKafkaConsumerFactory, KafkaTemplate}
-import org.springframework.kafka.listener.{KafkaMessageListenerContainer, MessageListener}
 import org.springframework.kafka.listener.config.ContainerProperties
+import org.springframework.kafka.listener.{KafkaMessageListenerContainer, MessageListener}
 import org.springframework.web.bind.annotation._
 import org.springframework.web.multipart.MultipartFile
+
+import scala.collection.JavaConverters._
 
 /**
   * TaskController implement routes for submitting task and receiving results
@@ -722,7 +719,7 @@ class TaskController {
   @throws[Exception]
   def listen(cr: ConsumerRecord[Int, String]): Unit = {
     val msgMap = JsonParser.jsonStrToMap(cr.value())
-
+    logger.warn("[testsystem_message_data]: " + msgMap("subject"))
     val method = messageHandlers.getClass.getMethod(msgMap("subject").toString, "".getClass, "".getClass)
     method.invoke(messageHandlers, msgMap("testsystem_id").toString, msgMap("data").toString)
   }
