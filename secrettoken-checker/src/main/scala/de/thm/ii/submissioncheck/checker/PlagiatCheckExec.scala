@@ -1,11 +1,10 @@
 package de.thm.ii.submissioncheck.checker
 import java.nio.file.{Path, Paths}
 
-import de.thm.ii.submissioncheck.{JsonHelper, ResultType}
-import de.thm.ii.submissioncheck.SecretTokenChecker.{LABEL_ACCEPT, LABEL_TASKID, ULDIR, logger, sendMessage}
+import de.thm.ii.submissioncheck.SecretTokenChecker.{LABEL_TASKID, ULDIR, logger}
 import de.thm.ii.submissioncheck.security.Secrets
 import de.thm.ii.submissioncheck.services.FileOperations
-import org.apache.kafka.clients.producer.ProducerRecord
+import de.thm.ii.submissioncheck.{JsonHelper, ResultType}
 
 import scala.collection.mutable.ListBuffer
 import scala.sys.process.{Process, ProcessLogger}
@@ -119,10 +118,7 @@ class PlagiatCheckExec(override val compile_production: Boolean) extends BaseChe
           if (!process._1) FileOperations.copy(Paths.get(oldPath).toFile, tmpDir.toFile) // add this old path to a zip, where docent can compare himself
       }
       sendPlagiatAnswer(submissionid, summerizedPassed, taskid) // send detection on current main user, and then provide a downloadable zip
-      val zip = subBasePath.resolve(s"plagiat_combined_hits_user_${userid}_task_${jsonMap("taskid")}.zip")
-      FileOperations.zip(zip, tmpDir.toString) // make and send zip File
-
-      additionalMessagetoWS("plagiatPackedZip", JsonHelper.mapToJsonStr(Map(LABEL_TASKID -> taskid, LABEL_USER_ID -> userid, "zip" -> base64Encode(zip))))
+      sendPlagiatZip(jsonMap, userid, subBasePath, tmpDir, taskid)
       FileOperations.rmdir(basepath.toFile)
     } catch {
       case e: Exception => output = e.toString
@@ -130,6 +126,19 @@ class PlagiatCheckExec(override val compile_production: Boolean) extends BaseChe
 
     // Always return TRUE, not to inform the user about this plagirism, but to give feedback, all checks are done feedback is saved in another way
     (true, output, exitcode, ResultType.STRING)
+  }
+
+  private def sendPlagiatZip(jsonMap: Map[String, Any], userid: Int, subBasePath: Path, tmpDir: Path, taskid: String) = {
+    val filename = s"plagiat_combined_hits_user_${userid}_task_${jsonMap("taskid")}.zip"
+    val zip = subBasePath.resolve(filename)
+
+    // make and send zip File
+    FileOperations.zip(zip, tmpDir.toString)
+    additionalMessagetoWS("plagiatPackedZip", JsonHelper.mapToJsonStr(Map("filename" -> filename, LABEL_TASKID -> taskid,
+      LABEL_USER_ID -> userid)), zip.toFile)
+
+    // tidy up the packed zip
+    FileOperations.rmdir(zip.toFile)
   }
 
   private def sendPlagiatAnswer(subid: Any, plagiatOK: Boolean, taskid: Any) = {

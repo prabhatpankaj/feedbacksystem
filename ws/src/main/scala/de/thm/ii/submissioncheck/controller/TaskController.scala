@@ -719,9 +719,14 @@ class TaskController {
   @throws[Exception]
   def listen(cr: ConsumerRecord[Int, String]): Unit = {
     val msgMap = JsonParser.jsonStrToMap(cr.value())
+    val data = msgMap("data").toString
+    val msgID = msgMap("msg_id").toString
     logger.warn("[testsystem_message_data]: " + msgMap("subject"))
-    val method = messageHandlers.getClass.getMethod(msgMap("subject").toString, "".getClass, "".getClass)
-    method.invoke(messageHandlers, msgMap("testsystem_id").toString, msgMap("data").toString)
+    val method = messageHandlers.getClass.getMethod(msgMap("subject").toString + "Handler", "".getClass, "".getClass, "".getClass)
+    method.invoke(messageHandlers, msgMap("testsystem_id").toString, data, msgID)
+
+    // tidy up message folder if exists
+    messageHandlers.tidyUpFile(msgID)
   }
 
   private def notifyDocentAfterPlagiarismCheck(courseid: Int, text: String) = {

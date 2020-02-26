@@ -8,10 +8,12 @@ import java.util.Base64
 import java.util.zip.ZipInputStream
 
 import akka.Done
-import de.thm.ii.submissioncheck.SecretTokenChecker.{DATA, LABEL_ACCEPT, LABEL_ERROR, LABEL_ERROR_DOWNLOAD, LABEL_ISINFO, LABEL_SUBMISSIONID, LABEL_TASKID, LABEL_TOKEN, LABEL_USE_EXTERN, ULDIR, downloadSubmittedFileToFS, logger, saveStringToFile, sendMessage}
+import de.thm.ii.submissioncheck.SecretTokenChecker.{DATA, LABEL_ACCEPT, LABEL_ERROR, LABEL_ERROR_DOWNLOAD, LABEL_ISINFO,
+  LABEL_SUBMISSIONID, LABEL_TASKID, LABEL_TOKEN, LABEL_USE_EXTERN, ULDIR, downloadSubmittedFileToFS, logger, saveStringToFile, sendMessage}
 import de.thm.ii.submissioncheck.security.Secrets
 import de.thm.ii.submissioncheck.services.FileOperations
 import de.thm.ii.submissioncheck.{JsonHelper, ResultType}
+import org.apache.commons.io.FileUtils
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.producer.ProducerRecord
 
@@ -158,14 +160,27 @@ class BaseChecker(val compile_production: Boolean) {
     * Everything will be send as string, so a suitable format should be defined
     * @param subject subject where handlers are registred at
     * @param data encoded data as string
+    * @param file "send" / share a file to the WS
     * @return future state of kafka message
     */
-  def additionalMessagetoWS(subject: String, data: String): Future[Done] = {
-    val message = JsonHelper.mapToJsonStr(Map(
-      "data" -> data,
+  def additionalMessagetoWS(subject: String, data: String = null, file: File = null): Future[Done] = {
+    val msgId = Secrets.getSHAStringFromNow()
+
+    var messageMap = Map(
       "subject"-> subject,
-      "testsystem_id" -> checkername
-    ))
+      "testsystem_id" -> checkername,
+      "msg_id" -> msgId
+    )
+
+    if (data != null) messageMap += ("data" -> data)
+
+    if (file != null) {
+      val folder = sharedMessagedPath.resolve(msgId)
+      FileUtils.copyFile(file, folder.resolve(file.getName).toFile)
+    }
+
+    val message = JsonHelper.mapToJsonStr(messageMap)
+
     logger.warning("additionalMessagetoWS: " + message)
     sendMessage(new ProducerRecord[String, String]("testsystem_message_data", message))
   }
@@ -317,7 +332,7 @@ class BaseChecker(val compile_production: Boolean) {
       File.createTempFile(s"submission_${placeholder}_tmp_${Secrets.getSHAStringFromNow()}", "").toPath
     }*/
     val dockertemp = if (!compile_production){
-      val localTmpPath = new File("/tmp").toPath.resolve("fb-dockertemp")
+      val localTmpPath = new File(  "/tmp").toPath.resolve("fb-dockertemp")
       localTmpPath.toFile.mkdirs()
       localTmpPath
     } else {

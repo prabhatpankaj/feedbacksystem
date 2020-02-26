@@ -45,6 +45,12 @@ class StorageService(compile_production: Boolean) {
   private def getTaskTestFilePath(taskid: Int, testsystem_id: String): String = UPLOAD_FOLDER + __slash + taskid.toString + __slash + testsystem_id
 
   /**
+    * dynamically get path whether it is dev or production
+    * @return path to shared folder between testsystems and webservice (ws)
+    */
+  def sharedMessagedPath: Path = Paths.get(if (compile_production) __slash else "" + "shared-messages")
+
+  /**
     * Delete a submission File
     * @param taskid the task where submissions is stored
     * @param submissionid the concerning submission from one unser
@@ -90,7 +96,7 @@ class StorageService(compile_production: Boolean) {
   }
 
   private def storeLocation(taskid: Int, submission_id: Int): Path = {
-    Paths.get(UPLOAD_FOLDER + "/" + taskid.toString + "/submits/" + submission_id.toString)
+    Paths.get(UPLOAD_FOLDER + __slash + taskid.toString + "/submits/" + submission_id.toString)
   }
 
   /**

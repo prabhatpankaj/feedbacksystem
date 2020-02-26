@@ -78,7 +78,6 @@ class SubmissionController {
     if (this.storageService == null) this.storageService = new StorageService(compile_production)
   }
 
-
   /**
     * re submit a task, i.e. its submission by the submission id
     * @param taskid the task id

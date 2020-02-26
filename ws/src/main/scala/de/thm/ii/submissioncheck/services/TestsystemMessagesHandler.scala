@@ -4,6 +4,7 @@ import java.util.{Timer, TimerTask}
 
 import de.thm.ii.submissioncheck.misc.JsonParser
 import org.apache.commons.codec.binary.Base64
+import org.apache.commons.io.FileUtils
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.SmartInitializingSingleton
 import org.springframework.beans.factory.annotation.{Autowired, Value}
@@ -23,7 +24,7 @@ class TestsystemMessagesHandler {
   private val taskExtensionService: TaskExtensionService = null
   private val LABEL_TASK_ID = "taskid"
   private val LABEL_USER_ID = "userid"
-  private val LABEL_SUCCESS = "success"
+  private val LABEL_MSG_ID = "msg_id"
   private val logger: Logger = LoggerFactory.getLogger(classOf[TestsystemMessagesHandler])
   private val LABEL_CHECKER_SERVICE_NOT_ALL_PARAMETER = "Checker Service did not provide all parameters"
   private var storageService: StorageService = null
@@ -61,17 +62,18 @@ class TestsystemMessagesHandler {
     * handles incoming zip file of plagiat processing
     * @param testsystem testsystemid
     * @param data payload
+    * @param msgID message has an id (name of shared messages folder)
     */
-  def plagiatPackedZip(testsystem: String, data: String): Unit = {
+  def plagiatPackedZipHandler(testsystem: String, data: String, msgID: String): Unit = {
     val answeredMap = JsonParser.jsonStrToMap(data)
     val userid = answeredMap(LABEL_USER_ID).toString.toInt
     val taskid = answeredMap(LABEL_TASK_ID).toString.toInt
-    val zipRaw = answeredMap("zip").toString
+    val filename = answeredMap("filename").toString
 
-    // save file from base64
+    // copy file from shared maessages folder
     val dirPath = storageService.getAndMakeTaskExtensionsPath(userid, "plagiat_zip", taskid)
     val zipPath = dirPath.resolve("plagiat_zip.zip")
-    base64Decode(zipRaw, zipPath.toFile)
+    FileUtils.copyFile(storageService.sharedMessagedPath.resolve(msgID).resolve(filename).toFile, zipPath.toFile)
 
     // store info in DB
     taskExtensionService.setTaskExtension(taskid, userid, "plagiatPackedZip", zipPath.toString, "file")
@@ -81,9 +83,10 @@ class TestsystemMessagesHandler {
     * handles plagiat markers
     * @param testsystem testsystemid
     * @param data payload
+    * @param msgID message has an id (name of shared messages folder)
     * @return nothing
     */
-  def plagiarismcheckerAnswer(testsystem: String, data: String): AnyVal = {
+  def plagiarismcheckerAnswerHandler(testsystem: String, data: String, msgID: String): AnyVal = {
     val answeredMap = JsonParser.jsonStrToMap(data)
 
     try {
@@ -98,5 +101,15 @@ class TestsystemMessagesHandler {
     } catch {
       case _: NoSuchElementException => logger.warn(LABEL_CHECKER_SERVICE_NOT_ALL_PARAMETER)
     }
+  }
+
+  /**
+    * shared messages main folder do not need to stored, remove and everything inside
+    * @param msgID message has an id (name of shared messages folder)
+    * @return if tidy up succeeded
+    */
+  def tidyUpFile(msgID: String): Boolean = {
+    val mainFolder = storageService.sharedMessagedPath.resolve(msgID).toFile
+    if (mainFolder.exists()) FileOperations.rmdir(mainFolder) else true
   }
 }
