@@ -177,6 +177,7 @@ class BaseChecker(val compile_production: Boolean) {
     if (file != null) {
       val folder = sharedMessagedPath.resolve(msgId)
       FileUtils.copyFile(file, folder.resolve(file.getName).toFile)
+      logger.warning("additionalMessagetoWS copied file was: " + folder.resolve(file.getName).toFile.toString)
     }
 
     val message = JsonHelper.mapToJsonStr(messageMap)
